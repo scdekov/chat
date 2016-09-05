@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="login.css">
+  </head>
+  <body>
+    <div id="login-box" class="login-popup">
+      <form method="post" class="signin" action="#">
+        <fieldset class="textbox">
+          <label class="username">
+            <span>Name</span>
+            <input id="username" name="username" value="" type="text" autocomplete="on" placeholder="Name">
+          </label>
+          <button class="submit button" type="button">Enter</button>     
+        </fieldset>
+      </form>
+    </div>
+
+
+    <ul id="messages"></ul>
+    <p class="user-typing"></p>
+    <form action="" class="new-message-form">
+      <input id="m" autocomplete="off" required/><button>Send</button>
+    </form>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="login.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+      var socket = io();
+      var username = '';
+      
+      $('.new-message-form').submit(function (){
+        socket.emit('chat message', $('#m').val());
+        $('#m').val('');
+        return false;
+      });
+
+      $('#m').keydown(function () {
+        if ($(this).val()) {
+          socket.emit('user typing');
+        }
+      });
+
+      $('.signin').submit(function () {
+        socket.emit('user', {name: $('#username').val()});
+        username = $('#username').val();
+        hideLoginForm();
+        return false;
+      });
+      
+      socket.on('chat message', function(msg){
+        $('#messages').append($('<li>').text(msg));
+        $("html, body").animate({ scrollTop: $(document).height() }, "slow");
+      });
+
+      socket.on('typing users', function (users) {
+        users = users.filter(function (user) {
+          return user != username;
+        });
+
+        var prefix = users.length > 1 ? 'Users ' : 'User ';
+        var postfix = users.length > 1 ? ' are typing...' : ' is typing...';
+        var message = users.reduce(function (acum, user, ix) {
+          acum += user;
+          acum += ix != users.length - 1 ? ', ' : '';
+          return acum;
+        }, '');
+
+        if (message) {
+          $('.user-typing').html(prefix + message + postfix);
+        } else {
+          $('.user-typing').html('');
+        }
+      });
+
+      showLogin();
+    </script>
+  </body>
+</html>
